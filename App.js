@@ -16,7 +16,9 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import { LinearGradient } from "expo-linear-gradient";
 import { fakeApi } from "./fakeApi";
-import AntDesign from '@expo/vector-icons/AntDesign';
+import { AntDesign, EvilIcons } from '@expo/vector-icons/';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function App() {
   const { width, height } = Dimensions.get("window");
@@ -30,6 +32,7 @@ export default function App() {
   const [selectedCurrency, setSelectedCurrency] = useState(
     fakeApi.convert?.rates?.EUR
   );
+  const storedFavorite = 'storedFavorite';
 
 
   const [amountToConvert, setAmountToConvert] = useState(1);
@@ -37,6 +40,27 @@ export default function App() {
   const urlCurrentPrice = `https://api.coindesk.com/v1/bpi/currentprice.json`;
 
   const urlConvert = `https://api.getgeoapi.com/v2/currency/convert?api_key=${process.env.EXPO_PUBLIC_API_KEY}&from=EUR&amount=10&format=json`;
+
+  const storeData = async (value) => {
+    try {
+      const jsonValue = JSON.stringify(value);
+      await AsyncStorage.setItem(storedFavorite, jsonValue);
+    } catch (e) {
+      // saving error
+      console.error(e);
+    }
+  };
+
+
+  const getData = async () => {
+    try {
+      const jsonValue = await AsyncStorage.getItem(storedFavorite);
+      return jsonValue != null ? JSON.parse(jsonValue) : [];
+    } catch (e) {
+      // error reading value
+      console.error(e);
+    }
+  };
 
   const fetchData = async () => {
     const response = await fetch(urlCurrentPrice);
@@ -52,9 +76,14 @@ export default function App() {
     return jsonConvert;
   };
 
+
+
+
+
   useEffect(() => {
     try {
       fetchData();
+      getData().then(data => data ?? setFavoriteCurrencies(data));
     } catch (e) {
       console.log(e);
     }
@@ -82,6 +111,7 @@ export default function App() {
     <TouchableOpacity style={{ padding: 10, flexDirection: "row", backgroundColor: "#fff", marginBottom: 10, borderRadius: 5 }} onPress={() => setFavoriteCurrencies(favoriteCurrencies?.filter(item => item?.currency_name !== selectedCurrency?.currency_name))}>
       <Text style={{ flex: 1 }}>{selectedCurrency.currency_name}</Text>
       <Text style={{ flex: 1 }}>{selectedCurrency.rate * BTCPrice}</Text>
+      <AntDesign name="delete" size={24} color="white" />
     </TouchableOpacity >
   );
 
@@ -94,9 +124,6 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      {/* <Button title="Get data" onPress={fetchData}>
-        Get data
-      </Button> */}
       <LinearGradient colors={["#000", "rgba(0,0,0,0.3)"]}>
         <ScrollView
           contentContainerStyle={styles.scrollView}
@@ -192,6 +219,7 @@ export default function App() {
                     else {
                       setFavoriteCurrencies([selectedCurrency, ...favoriteCurrencies]);
                     }
+                    storeData([selectedCurrency, ...favoriteCurrencies]);
                   }}
                 >
                   {!favoriteCurrencies.includes(selectedCurrency) ?
@@ -245,14 +273,15 @@ export default function App() {
                     <Text> {new Date(coindeskData?.time?.updatedISO).toLocaleString()}</Text>
                   </Text>
 
-                  <Text>Slide to update</Text>
+                  <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}><Text style={{ color: "#fff" }}>Slide to update </Text><EvilIcons name="refresh" size={24} color="white" />
+                  </View>
                 </View>
 
               </View>
             )}
           </View>
 
-          <Text>All currencies</Text>
+          <Text style={{ color: "#fff", fontWeight: "bold", paddingBottom: 5, paddingTop: 20 }}>All currencies</Text>
           <ScrollView style={{ gap: 10 }}>
             {convertData?.rates &&
               Object.keys(convertData?.rates).map((element, id) => (
