@@ -26,7 +26,6 @@ export default FavoriteListComponent = ({
         );
         setFavoriteCurrencies([...newList]);
         storeData(newList);
-        console.log(AsyncStorage.getItem(storedFavorite));
       }}
     >
       <Text style={{ flex: 1 }}>{selectedCurrency.currency_name}</Text>
@@ -56,7 +55,7 @@ export default FavoriteListComponent = ({
           />
         )}
         keyExtractor={(item, index) => {
-          item.currency_name + "-" + index;
+          item.currency_name + "-Fav-" + index;
         }}
       />
     </View>

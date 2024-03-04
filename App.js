@@ -23,11 +23,10 @@ import AllCurrenciesListComponent from "./components/AllCurrenciesListComponent"
 import SelectCurrencyComponent from "./components/SelectCurrencyComponent";
 
 export default function App() {
-  const { width, height } = Dimensions.get("window");
+  const { width } = Dimensions.get("window");
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [coindeskData, setCoindeskData] = useState(fakeApi.coindesk);
   const [BTCPrice, setBTCPrice] = useState(fakeApi.coindesk.bpi.EUR.rate_float);
-  const [UpdatedAt, setUpdatedAt] = useState(fakeApi.coindesk.time.updated);
   const [convertData, setConvertData] = useState(fakeApi?.convert);
   const [currencies, setCurrencies] = useState(
     Object.keys(fakeApi?.convert?.rates)
@@ -216,7 +215,6 @@ export default function App() {
                       );
                       setFavoriteCurrencies([...newValue]);
                       storeData([...newValue]);
-                      console.log(AsyncStorage.getItem(storedFavorite));
                     } else {
                       setFavoriteCurrencies([
                         selectedCurrency,
