@@ -6,34 +6,36 @@ import {
   View,
   Image,
   Dimensions,
-  Button,
   ScrollView,
   TextInput,
   TouchableOpacity,
-  RefreshControl,
-  FlatList
+  RefreshControl
 } from "react-native";
-import { Picker } from '@react-native-picker/picker';
+
 import { LinearGradient } from "expo-linear-gradient";
 import { fakeApi } from "./fakeApi";
-import { AntDesign, EvilIcons } from '@expo/vector-icons/';
+import { AntDesign } from "@expo/vector-icons/";
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import UpdatedAtComponent from "./components/UpdatedAtComponent";
+import FavoriteListComponent from "./components/FavoriteListComponent";
+import AllCurrenciesListComponent from "./components/AllCurrenciesListComponent";
+import SelectCurrencyComponent from "./components/SelectCurrencyComponent";
 
 export default function App() {
-  const { width, height } = Dimensions.get("window");
-
+  const { width } = Dimensions.get("window");
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const [coindeskData, setCoindeskData] = useState(fakeApi.coindesk);
   const [BTCPrice, setBTCPrice] = useState(fakeApi.coindesk.bpi.EUR.rate_float);
-  const [UpdatedAt, setUpdatedAt] = useState(fakeApi.coindesk.time.updated);
   const [convertData, setConvertData] = useState(fakeApi?.convert);
-  const [currencies, setCurrencies] = useState(Object.keys(fakeApi?.convert?.rates));
+  const [currencies, setCurrencies] = useState(
+    Object.keys(fakeApi?.convert?.rates)
+  );
   const [favoriteCurrencies, setFavoriteCurrencies] = useState([]);
   const [selectedCurrency, setSelectedCurrency] = useState(
     fakeApi.convert?.rates?.EUR
   );
-  const storedFavorite = 'storedFavorite';
-
+  const storedFavorite = "storedFavorite";
 
   const [amountToConvert, setAmountToConvert] = useState(1);
 
@@ -51,10 +53,10 @@ export default function App() {
     }
   };
 
-
   const getData = async () => {
     try {
       const jsonValue = await AsyncStorage.getItem(storedFavorite);
+      console.info("AsyncStorage ", jsonValue);
       return jsonValue != null ? JSON.parse(jsonValue) : [];
     } catch (e) {
       // error reading value
@@ -72,18 +74,15 @@ export default function App() {
     !!jsonConvert
       ? setConvertData(jsonConvert)
       : setConvertData(fakeApi.convert);
-    if (!!jsonConvert?.rates && !!Object?.keys(jsonConvert?.rates)) setCurrencies(Object?.keys(jsonConvert?.rates));
+    if (!!jsonConvert?.rates && !!Object?.keys(jsonConvert?.rates))
+      setCurrencies(Object?.keys(jsonConvert?.rates));
     return jsonConvert;
   };
-
-
-
-
 
   useEffect(() => {
     try {
       fetchData();
-      getData().then(data => data ?? setFavoriteCurrencies(data));
+      getData().then((data) => !!data && setFavoriteCurrencies(data));
     } catch (e) {
       console.log(e);
     }
@@ -100,20 +99,11 @@ export default function App() {
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchData();
+    getData().then((data) => !!data && setFavoriteCurrencies(data));
     setTimeout(() => {
       setRefreshing(false);
     }, 2000);
   }, []);
-
-
-
-  const FavItem = ({ selectedCurrency }) => (
-    <TouchableOpacity style={{ padding: 10, flexDirection: "row", backgroundColor: "#fff", marginBottom: 10, borderRadius: 5 }} onPress={() => setFavoriteCurrencies(favoriteCurrencies?.filter(item => item?.currency_name !== selectedCurrency?.currency_name))}>
-      <Text style={{ flex: 1 }}>{selectedCurrency.currency_name}</Text>
-      <Text style={{ flex: 1 }}>{selectedCurrency.rate * BTCPrice}</Text>
-      <AntDesign name="delete" size={24} color="white" />
-    </TouchableOpacity >
-  );
 
   // Your mission, if you choose to accept it is to build a simple React
   // Native application displaying the current price of BTC (Bitcoin) in as
@@ -131,6 +121,7 @@ export default function App() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
+          {/* ------------------------LOGO------------------------ */}
           <View
             style={{
               width: width,
@@ -143,6 +134,7 @@ export default function App() {
           >
             <Image source={logo} style={{ width: 150, height: 150 }} />
           </View>
+
           <View
             style={{
               width: width,
@@ -153,17 +145,28 @@ export default function App() {
             }}
           >
             {!!coindeskData && (
-
-              <View style={{ width: width - 20, paddingVertical: 20, justifyContent: "center", color: "#fff", fontWeight: "bold" }}>
-                <Text style={{ fontWeight: "bold", color: "#fff", marginBottom: 5 }}>Select the amount to convert</Text>
-
-                <View style={{
-                  flexDirection: "row",
-                  alignItems: "center",
+              <View
+                style={{
+                  width: width - 20,
+                  paddingVertical: 20,
                   justifyContent: "center",
-                  gap: 10
-
+                  color: "#fff",
+                  fontWeight: "bold"
                 }}
+              >
+                <Text
+                  style={{ fontWeight: "bold", color: "#fff", marginBottom: 5 }}
+                >
+                  Select the amount to convert
+                </Text>
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10
+                  }}
                 >
                   <TextInput
                     keyboardType="numeric"
@@ -182,50 +185,50 @@ export default function App() {
                   <Text>BTC{amountToConvert > 1 ? "s" : ""}</Text>
                 </View>
 
-                <Text style={{ fontWeight: "bold", color: "#fff", marginBottom: 5 }}>Select the currency to convert</Text>
-                <Picker
-                  style={{ backgroundColor: "#333", width: "100%", padding: 10, marginBottom: 10, textAlign: "center", borderRadius: 5, color: "#fff" }}
-                  selectedValue={selectedCurrency}
-                  onValueChange={(itemValue, itemIndex) =>
-                    setSelectedCurrency(itemValue)
-                  }>
+                <SelectCurrencyComponent
+                  selectedCurrency={selectedCurrency}
+                  setSelectedCurrency={setSelectedCurrency}
+                  rates={convertData?.rates}
+                />
 
-                  {convertData?.rates &&
-                    Object.keys(convertData?.rates).map((element, id) => (
-                      <Picker.Item
-                        style={{ backgroundColor: "#333" }}
-                        key={id}
-                        label={`${element} - (${convertData?.rates?.[element].currency_name})`}
-                        value={convertData?.rates?.[element]}
-                      />
-                    ))}
-                </Picker>
+                <Text
+                  style={{ fontWeight: "bold", color: "#fff", marginBottom: 5 }}
+                >
+                  See the price on 1 BTC in the selected currency
+                </Text>
 
-                <Text style={{ fontWeight: "bold", color: "#fff", marginBottom: 5 }}>See the price on 1 BTC in the selected currency</Text>
-
-                <TouchableOpacity style={{
-                  width: "100%",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 10,
-                  backgroundColor: "red",
-                  borderRadius: 5
-                }}
+                <TouchableOpacity
+                  style={{
+                    width: "100%",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
+                    backgroundColor: "red",
+                    borderRadius: 5
+                  }}
                   onPress={() => {
                     if (favoriteCurrencies.includes(selectedCurrency)) {
-                      setFavoriteCurrencies(favoriteCurrencies.filter(item => item !== selectedCurrency));
+                      let newValue = favoriteCurrencies.filter(
+                        (item) =>
+                          item.currency_name !== selectedCurrency.currency_name
+                      );
+                      setFavoriteCurrencies([...newValue]);
+                      storeData([...newValue]);
+                    } else {
+                      setFavoriteCurrencies([
+                        selectedCurrency,
+                        ...favoriteCurrencies
+                      ]);
+                      storeData([selectedCurrency, ...favoriteCurrencies]);
                     }
-                    else {
-                      setFavoriteCurrencies([selectedCurrency, ...favoriteCurrencies]);
-                    }
-                    storeData([selectedCurrency, ...favoriteCurrencies]);
                   }}
                 >
-                  {!favoriteCurrencies.includes(selectedCurrency) ?
-                    <AntDesign name="star" size={24} color="goldenrod" /> :
+                  {!favoriteCurrencies.includes(selectedCurrency) ? (
+                    <AntDesign name="star" size={24} color="goldenrod" />
+                  ) : (
                     <AntDesign name="staro" size={24} color="goldenrod" />
-                  }
+                  )}
 
                   <Text
                     style={{
@@ -237,7 +240,6 @@ export default function App() {
                       fontWeight: "bold"
                     }}
                   >
-
                     <Text>
                       {coindeskData?.bpi?.EUR?.rate
                         .split(".")
@@ -248,72 +250,51 @@ export default function App() {
                     </Text>
                     <Text> {selectedCurrency.currency_name}</Text>
                   </Text>
-
                 </TouchableOpacity>
-
 
                 {/* ----------------------FAVORITE CURRENCIES---------------------- */}
 
+                {!!favoriteCurrencies && (
+                  <FavoriteListComponent
+                    favoriteCurrencies={favoriteCurrencies}
+                    selectedCurrency={selectedCurrency}
+                    BTCPrice={BTCPrice}
+                    setFavoriteCurrencies={setFavoriteCurrencies}
+                    storeData={storeData}
+                  />
+                )}
 
-                {!!favoriteCurrencies &&
-                  <View>
-                    <Text style={{ color: "#fff", fontWeight: "bold", paddingBottom: 5, paddingTop: 20 }}>Your Favorite Currencies</Text>
-                    <FlatList
-                      data={favoriteCurrencies}
-                      renderItem={({ item }) => <FavItem selectedCurrency={item} />}
-                      keyExtractor={item => item.currency_name}
-                    />
+                {/* ------------------------ALL CURRENCIES------------------------ */}
+                <TouchableOpacity
+                  style={{
+                    color: "#fff",
+                    backgroundColor: "#333",
+                    borderRadius: 5,
+                    padding: 10,
+                    fontWeight: "bold",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10
+                  }}
+                  onPress={() => setIsModalVisible(true)}
+                >
+                  <AntDesign name="bars" size={24} color="black" />
+                  <Text>See All Currencies</Text>
+                </TouchableOpacity>
+                <AllCurrenciesListComponent
+                  isModalVisible={isModalVisible}
+                  setIsModalVisible={setIsModalVisible}
+                  convertData={convertData}
+                  amountToConvert={amountToConvert}
+                  BTCPrice={BTCPrice}
+                  setSelectedCurrency={setSelectedCurrency}
+                />
 
-                  </View>
-                }
                 {/* ----------------------- UPDATED AT ----------------------- */}
-                <View style={{ paddingTop: 20 }}>
-                  <Text style={{ color: "#fff" }}>
-                    Price Rates updated at :
-                    <Text> {new Date(coindeskData?.time?.updatedISO).toLocaleString()}</Text>
-                  </Text>
-
-                  <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}><Text style={{ color: "#fff" }}>Slide to update </Text><EvilIcons name="refresh" size={24} color="white" />
-                  </View>
-                </View>
-
+                <UpdatedAtComponent coindeskData={coindeskData} />
               </View>
             )}
           </View>
-
-          <Text style={{ color: "#fff", fontWeight: "bold", paddingBottom: 5, paddingTop: 20 }}>All currencies</Text>
-          <ScrollView style={{ gap: 10 }}>
-            {convertData?.rates &&
-              Object.keys(convertData?.rates).map((element, id) => (
-                <TouchableOpacity
-                  onPress={() =>
-                    setSelectedCurrency(convertData?.rates?.[element])
-                  }
-                  key={id}
-                  style={{
-                    flexDirection: "row",
-                    gap: 10,
-                    maxWidth: width - 20,
-                    padding: 10,
-                    backgroundColor: "#333",
-                    borderRadius: 5,
-                    color: "#fff",
-                    marginVertical: 5
-                  }}
-                >
-                  <Text style={{ color: "#fff" }}>{element}</Text>
-
-                  <Text style={{ color: "#fff" }}>
-                    {convertData?.rates?.[element]?.rate *
-                      BTCPrice *
-                      amountToConvert}
-                  </Text>
-                  <Text style={{ color: "#fff" }}>
-                    {convertData?.rates?.[element]?.currency_name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-          </ScrollView>
         </ScrollView>
 
         <StatusBar style="auto" />
